@@ -6,11 +6,12 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Імпортуємо нову функцію clear_old_orders
 import database as db
-from config import bot
+from config import MENU_URL, bot
 
 def get_lunch_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Я замовив обід!", callback_data="confirm_lunch")]
+        [InlineKeyboardButton(text="✅ Я замовив обід!", callback_data="confirm_lunch")],
+        [InlineKeyboardButton(text="📋 Меню", url=MENU_URL)],
     ])
 
 async def check_and_send_reminders():
@@ -30,7 +31,7 @@ async def check_and_send_reminders():
             current_time_str = user_now.strftime("%H:%M")
             
             # --- ХВИЛЯ 1: 17:00 ---
-            if current_time_str == "17:50":
+            if current_time_str == "17:00":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
@@ -40,7 +41,7 @@ async def check_and_send_reminders():
                     )
             
             # --- ХВИЛЯ 2: 17:30 ---
-            elif current_time_str == "17:53":
+            elif current_time_str == "17:30":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,

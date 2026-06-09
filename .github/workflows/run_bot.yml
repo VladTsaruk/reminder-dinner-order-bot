@@ -29,4 +29,5 @@ jobs:
       env:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         MONGO_URI: ${{ secrets.MONGO_URI }}
+        ADMIN_USER_ID: ${{ secrets.ADMIN_USER_ID }}
       run: python main.py
