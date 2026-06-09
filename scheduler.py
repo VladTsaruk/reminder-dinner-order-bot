@@ -30,7 +30,7 @@ async def check_and_send_reminders():
             current_time_str = user_now.strftime("%H:%M")
             
             # --- ХВИЛЯ 1: 17:00 ---
-            if current_time_str == "17:00":
+            if current_time_str == "17:50":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
@@ -40,7 +40,7 @@ async def check_and_send_reminders():
                     )
             
             # --- ХВИЛЯ 2: 17:30 ---
-            elif current_time_str == "17:30":
+            elif current_time_str == "17:53":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
