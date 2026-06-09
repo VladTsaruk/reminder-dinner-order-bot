@@ -20,7 +20,7 @@ async def check_and_send_reminders():
     for user_id, tz_name in users:
         try:
             user_tz = pytz.timezone(tz_name)
-            user_now = datetime.now(user_tz)
+            user_now = datetime.now(pytz.utc).astimezone(user_tz)
             
             valid_days = [6, 0, 1, 2, 3] # Неділя - Четвер
             
@@ -30,7 +30,7 @@ async def check_and_send_reminders():
             current_time_str = user_now.strftime("%H:%M")
             
             # --- ХВИЛЯ 1: 17:05 ---
-            if current_time_str == "14:05":
+            if current_time_str == "14:10":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
