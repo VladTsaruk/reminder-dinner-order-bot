@@ -27,7 +27,7 @@ async def cmd_start(message: Message):
     
     await message.answer(
         f"Привіт\, {username}\! 👋\n\n"
-        f"Я твій обідній бот-нагадувачка\.\n"
+        f"Я твій обідній бот\-нагадувачка\.\n"
         f"З неділі по четвер о **17:00** я буду нагадувати тобі замовити їжу\.\n"
     )
 
@@ -43,6 +43,7 @@ async def process_confirm_lunch(callback: CallbackQuery):
     await callback.message.edit_text(
         "ℹ️ **Нагадування про обід**\n\n"
         "Чудово\! Твоє замовлення підтверджено\. Смачного\! 🍽️"
+        "Посилання на меню: [Меню](https://imperialfood.com.ua/iEmployee/#!menu)"
     )
     await callback.answer("Статус оновлено\!")
 
