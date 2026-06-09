@@ -1,15 +1,20 @@
 name: Lunch Reminder Bot
 
 on:
-  push:
-    branches: [ main ]
   schedule:
-    - cron: '0 */5 * * *'  # Автоперезапуск кожні 5 годин
-  workflow_dispatch: # Дозволяє запускати бота вручну кнопкою на GitHub
+    # Runs Sunday-Thursday before the reminder window in Europe/Kyiv.
+    # 12:30 UTC is 14:30 in winter and 15:30 in summer, so the bot is alive at 17:00 and 17:30.
+    - cron: '30 12 * * 0-4'
+  workflow_dispatch:
+
+concurrency:
+  group: lunch-reminder-bot
+  cancel-in-progress: true
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 240
 
     steps:
     - name: Checkout repository
