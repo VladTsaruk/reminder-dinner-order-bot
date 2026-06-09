@@ -2,8 +2,10 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import CommandStart
 import database as db
+from config import bot
 
 router = Router()
+ADMIN_USER_ID = 8504572391
 
 def get_lunch_keyboard():
     """Створює інтерактивну кнопку для підтвердження обіду\."""
@@ -58,13 +60,76 @@ async def cmd_help(message: Message):
     )
 
 
+@router.message(F.text.startswith("/send"))
+async def cmd_send_reminder(message: Message):
+    """Ручна розсилка нагадування всім користувачам від адміна."""
+    user_id = message.from_user.id
+
+    if user_id != ADMIN_USER_ID:
+        await message.answer("❌ У вас немає доступу до цієї команди\\.")
+        return
+
+    parts = (message.text or "").split(maxsplit=1)
+    reminder_time = parts[1].strip() if len(parts) > 1 else ""
+
+    if not reminder_time:
+        await message.answer("Використання: /send 17:40", parse_mode=None)
+        return
+
+    try:
+        hour, minute = reminder_time.split(":", 1)
+        hour_number = int(hour)
+        minute_number = int(minute)
+        if hour_number < 0 or hour_number > 23 or minute_number < 0 or minute_number > 59:
+            raise ValueError
+        reminder_time = f"{hour_number:02d}:{minute_number:02d}"
+    except ValueError:
+        await message.answer("Час має бути у форматі HH:MM, наприклад /send 17:40", parse_mode=None)
+        return
+
+    users = await db.get_all_users()
+    sent_count = 0
+    skipped_count = 0
+    failed_count = 0
+
+    for target_user_id, _ in users:
+        try:
+            if await db.check_order_status(target_user_id):
+                skipped_count += 1
+                continue
+
+            await bot.send_message(
+                chat_id=target_user_id,
+                text=(
+                    f"⏰ Нагадування про обід!\n\n"
+                    f"Зараз {reminder_time}. Не забудь замовити свій обід! 🍽️"
+                ),
+                reply_markup=get_lunch_keyboard(),
+                parse_mode=None,
+            )
+            sent_count += 1
+        except Exception as e:
+            failed_count += 1
+            print(f"Помилка ручної розсилки для користувача {target_user_id}: {e}")
+
+    await message.answer(
+        (
+            "Ручну розсилку завершено.\n"
+            f"Відправлено: {sent_count}\n"
+            f"Пропущено вже замовивших: {skipped_count}\n"
+            f"Помилок: {failed_count}"
+        ),
+        parse_mode=None,
+    )
+
+
 # Додаємо команду для тестування розсилки
 @router.message(F.text == "/test_reminder")
 async def cmd_test_reminder(message: Message):
     user_id = message.from_user.id
     
     # Перевірка, чи це наш тестовий користувач
-    if user_id != 8504572391:
+    if user_id != ADMIN_USER_ID:
         await message.answer("❌ У вас немає доступу до цієї команди\.")
         return
         
