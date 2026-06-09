@@ -10,7 +10,7 @@ def get_lunch_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="✅ Я замовив обід\!", 
+                text="✅ Я замовив обід!", 
                 callback_data="confirm_lunch"
             )
         ]
