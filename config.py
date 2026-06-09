@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from motor.motor_asyncio import AsyncIOMotorClient
+import certifi
 
 # Зчитування .env
 if os.path.exists(".env"):
@@ -23,5 +24,5 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 dp = Dispatcher()
 
 # Підключення до MongoDB (база даних буде називатися lunch_bot_db)
-mongo_client = AsyncIOMotorClient(MONGO_URI)
+mongo_client = AsyncIOMotorClient(MONGO_URI, tlsCAFile=certifi.where())
 db = mongo_client["lunch_bot_db"]

@@ -3,3 +3,4 @@ pydantic-settings
 apscheduler
 pytz
 motor
+certifi
