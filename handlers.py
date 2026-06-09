@@ -47,6 +47,17 @@ async def process_confirm_lunch(callback: CallbackQuery):
     )
     await callback.answer("Статус оновлено\!")
 
+@router.message(F.text == "/help")
+async def cmd_help(message: Message):
+    """Обробка команди /help\."""
+    await message.answer(
+        "🆘 *Допомога*\n\n"
+        "Цей бот допомагає тобі не забувати замовляти обід\.\n"
+        "Просто чекай на нагадування о 17:00 з неділі по четвер і натискай кнопку, щоб підтвердити замовлення\.\n\n"
+        "Якщо у тебе є питання або пропозиції\, звертайся до @Владислав Царук в Slack\."
+    )
+
+
 # Додаємо команду для тестування розсилки
 @router.message(F.text == "/test_reminder")
 async def cmd_test_reminder(message: Message):
