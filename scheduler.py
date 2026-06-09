@@ -34,22 +34,20 @@ async def check_and_send_reminders():
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
-                        text="⏰ **Нагадування про обід!**\n\nДо кінця прийому замовлень залишилася 1 година. Не забудь замовити свій обід! 🍽️",
+                        text="⏰ *Нагадування про обід!*\n\nДо кінця прийому замовлень залишилася 1 година. Не забудь замовити свій обід! 🍽️",
                         reply_markup=get_lunch_keyboard(),
                         parse_mode=None,
                     )
-                    print(f"Нагадування 17:00 відправлено користувачу {user_id}")
             
             # --- ХВИЛЯ 2: 17:30 ---
             elif current_time_str == "17:30":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
-                        text="⚠️ **Залишилося 30 хвилин!**\n\nТи досі не підтвердив замовлення обіду. Будь ласка, замов їжу та натисни кнопку нижче! 👇",
+                        text="⚠️ *Залишилося 30 хвилин!*\n\nТи досі не підтвердив замовлення обіду. Будь ласка, замов їжу та натисни кнопку нижче! 👇",
                         reply_markup=get_lunch_keyboard(),
                         parse_mode=None,
                     )
-                    print(f"Нагадування 17:30 відправлено користувачу {user_id}")
                     
         except Exception as e:
             print(f"Помилка відправки для користувача {user_id}: {e}")
