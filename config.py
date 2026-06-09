@@ -20,7 +20,7 @@ if not BOT_TOKEN:
     raise ValueError("Помилка: BOT_TOKEN не знайдено!")
 
 # Ініціалізація бота та диспетчера
-bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2))
 dp = Dispatcher()
 
 # Підключення до MongoDB (база даних буде називатися lunch_bot_db)
