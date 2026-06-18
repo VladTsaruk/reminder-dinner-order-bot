@@ -1,8 +1,7 @@
 services:
   bot:
-    image: vladtsaruk/reminder-dinner-order-bot:latest
-    container_name: telegram-bot
-    restart: unless-stopped
-
+    container_name: reminder-dinner-order-bot
+    build: .
+    restart: always
     env_file:
       - .env
