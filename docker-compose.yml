@@ -4,4 +4,4 @@ services:
     build: .
     restart: always
     env_file:
-      - .env
+      - D:/Dev/reminder-dinner-order-bot-main/.env
