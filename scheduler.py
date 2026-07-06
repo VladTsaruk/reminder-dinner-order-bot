@@ -37,7 +37,7 @@ async def check_and_send_reminders():
                         chat_id=user_id,
                         text="⏰ *Нагадування про обід!*\n\nДо кінця прийому замовлень залишилася 1 година. Не забудь замовити свій обід! 🍽️",
                         reply_markup=get_lunch_keyboard(),
-                        parse_mode=None,
+                        parse_mode="Markdown",
                     )
             
             # --- ХВИЛЯ 2: 17:30 ---
@@ -47,7 +47,7 @@ async def check_and_send_reminders():
                         chat_id=user_id,
                         text="⚠️ *Залишилося 30 хвилин!*\n\nТи досі не підтвердив замовлення обіду. Будь ласка, замов їжу та натисни кнопку нижче! 👇",
                         reply_markup=get_lunch_keyboard(),
-                        parse_mode=None,
+                        parse_mode="Markdown",
                     )
             # --- ХВИЛЯ 3: 17:50, 17:52, 17:54, 17:56, 17:58 ---
             elif current_time_str in ["17:50", "17:52", "17:54", "17:56", "17:58"]:
@@ -56,7 +56,7 @@ async def check_and_send_reminders():
                         chat_id=user_id,
                         text="⏳ *Останній шанс!*\n\nДо кінця прийому замовлень залишилося менше 10 хвилин. Не забудь замовити свій обід! 🍽️",
                         reply_markup=get_lunch_keyboard(),
-                        parse_mode=None,
+                        parse_mode="Markdown",
                     )
                     
         except Exception as e:
