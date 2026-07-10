@@ -1,12 +1,13 @@
 import asyncio
 from datetime import datetime
-import pytz
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import pytz # type: ignore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton # type: ignore
 
-# Імпортуємо нову функцію clear_old_orders
 import database as db
 from config import MENU_URL, bot
+from handlers import get_remote_work_keyboard
+
 
 def get_lunch_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -14,22 +15,26 @@ def get_lunch_keyboard():
         [InlineKeyboardButton(text="📋 Меню", url=MENU_URL)],
     ])
 
+
 async def check_and_send_reminders():
     """Головна функція перевірки (неділя-четвер)."""
-    users = await db.get_all_users() 
-    
+    users = await db.get_all_users()
+
     for user_id, tz_name in users:
         try:
             user_tz = pytz.timezone(tz_name)
             user_now = datetime.now(pytz.utc).astimezone(user_tz)
-            
-            valid_days = [6, 0, 1, 2, 3] # Неділя - Четвер
-            
+
+            valid_days = [6, 0, 1, 2, 3]  # Неділя - Четвер
+
             if user_now.weekday() not in valid_days:
                 continue
-                
+
+            if await db.should_skip_lunch_reminder(user_id, user_now.date()):
+                continue
+
             current_time_str = user_now.strftime("%H:%M")
-            
+
             # --- ХВИЛЯ 1: 17:00 ---
             if current_time_str == "17:00":
                 if not await db.check_order_status(user_id):
@@ -39,7 +44,7 @@ async def check_and_send_reminders():
                         reply_markup=get_lunch_keyboard(),
                         parse_mode="Markdown",
                     )
-            
+
             # --- ХВИЛЯ 2: 17:30 ---
             elif current_time_str == "17:30":
                 if not await db.check_order_status(user_id):
@@ -58,19 +63,48 @@ async def check_and_send_reminders():
                         reply_markup=get_lunch_keyboard(),
                         parse_mode="Markdown",
                     )
-                    
+
         except Exception as e:
             print(f"Помилка відправки для користувача {user_id}: {e}")
+
+
+async def send_remote_work_question():
+    """Щопонеділка о 13:00 питає користувача, коли він працюватиме віддалено."""
+    users = await db.get_all_users()
+
+    for user_id, tz_name in users:
+        try:
+            user_tz = pytz.timezone(tz_name)
+            user_now = datetime.now(pytz.utc).astimezone(user_tz)
+
+            if user_now.weekday() != 0:
+                continue
+
+            current_time_str = user_now.strftime("%H:%M")
+            if current_time_str != "13:00":
+                continue
+
+            await bot.send_message(
+                chat_id=user_id,
+                text="📅 Коли ти працюватимеш віддалено на цьому тижні?\n\nОбери один день:",
+                reply_markup=get_remote_work_keyboard(),
+            )
+        except Exception as e:
+            print(f"Помилка відправки питання про віддалену роботу для користувача {user_id}: {e}")
+
 
 def start_scheduler():
     """Ініціалізація планувальника."""
     scheduler = AsyncIOScheduler()
-    
+
     # 1. Перевірка нагадувань — щохвилини
     scheduler.add_job(check_and_send_reminders, 'cron', second=0)
-    
-    # 2. Автоматичне очищення бази даних — щосуботи (day_of_week='sat') о 03:00 ночі
+
+    # 2. Щопонеділка о 13:00 — питання про віддалену роботу
+    scheduler.add_job(send_remote_work_question, 'cron', day_of_week='mon', hour=13, minute=0)
+
+    # 3. Автоматичне очищення бази даних — щосуботи (day_of_week='sat') о 03:00 ночі
     scheduler.add_job(db.clear_old_orders, 'cron', day_of_week='sat', hour=3, minute=0)
-    
+
     scheduler.start()
-    print("📅 Планувальник нагадувань та таска очищення БД запущені!")
+    print("📅 Планувальник нагадувань, питання про віддалену роботу та очищення БД запущені!")
