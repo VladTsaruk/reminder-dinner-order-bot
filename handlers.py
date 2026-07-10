@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from aiogram import Router, F  # type: ignore
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton  # type: ignore
-from aiogram.filters import CommandStart  # type: ignore
+from aiogram.filters import Command, CommandStart  # type: ignore
 import database as db
 from config import ADMIN_USER_ID, MENU_URL, bot
 
@@ -50,7 +50,7 @@ def get_remote_work_date(selected_day: str) -> str:
     return (today + timedelta(days=delta)).strftime("%Y-%m-%d")
 
 
-@router.message(CommandStart())
+@router.message(Command("start"))
 async def cmd_start(message: Message):
     """Обробка команди /start. Реєструємо користувача в MongoDB."""
     user_id = message.from_user.id
@@ -62,7 +62,8 @@ async def cmd_start(message: Message):
         f"Привіт, {username}! 👋\n\n"
         f"Я твій обідній бот-нагадувачка.\n"
         f"З неділі по четвер о 17:00 я буду нагадувати тобі замовити їжу.\n"
-        f"Щопонеділка о 13:00 я також спитую, коли ти працюватимеш віддалено."
+        f"Щопонеділка о 13:00 я також спитую, коли ти працюватимеш віддалено.",
+        parse_mode=None,
     )
 
 
@@ -74,8 +75,9 @@ async def process_confirm_lunch(callback: CallbackQuery):
     await db.confirm_order(user_id)
 
     await callback.message.edit_text(
-        "ℹ️ *Нагадування про обід*\n\n"
-        "Чудово! Твоє замовлення підтверджено. Смачного! 🍽️"
+        "ℹ️ Нагадування про обід\n\n"
+        "Чудово! Твоє замовлення підтверджено. Смачного! 🍽️",
+        parse_mode=None,
     )
     await callback.answer("Статус оновлено!")
 
@@ -106,7 +108,8 @@ async def process_remote_work_day(callback: CallbackQuery):
     }
 
     await callback.message.edit_text(
-        f"✅ Дякую! Я запам'ятав, що ти працюватимеш віддалено {day_labels[selected_day]} ({remote_work_date})."
+        f"✅ Дякую! Я запам'ятав, що ти працюватимеш віддалено {day_labels[selected_day]} ({remote_work_date}).",
+        parse_mode=None,
     )
     await callback.answer("День збережено!")
 
@@ -126,14 +129,15 @@ async def cmd_test_remote_question(message: Message):
     await message.answer("Тестове повідомлення відправлено.")
 
 
-@router.message(F.text == "/help")
+@router.message(Command("help"))
 async def cmd_help(message: Message):
     """Обробка команди /help."""
     await message.answer(
-        "🆘 *Допомога*\n\n"
+        "🆘 Допомога\n\n"
         "Цей бот допомагає тобі не забувати замовляти обід.\n"
         "Просто чекай на нагадування о 17:00 з неділі по четвер і натискай кнопку, щоб підтвердити замовлення.\n\n"
         "Щопонеділка о 13:00 я також питатиму, коли ти працюватимеш віддалено.\n"
         "Для адміністратора доступна команда /test_remote_question для перевірки повідомлення.\n"
-        "Якщо у тебе є питання або пропозиції, звертайся до `@Владислав Царук` в Slack."
+        "Якщо у тебе є питання або пропозиції, звертайся до @Владислав Царук в Slack.",
+        parse_mode=None,
     )
