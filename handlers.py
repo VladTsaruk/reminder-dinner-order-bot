@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from aiogram import Router, F  # type: ignore
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton  # type: ignore
 from aiogram.filters import Command, CommandStart  # type: ignore
+import pytz # type: ignore
 import database as db
 from config import ADMIN_USER_ID, MENU_URL, bot
 
@@ -40,9 +41,14 @@ def get_remote_work_keyboard():
     ])
 
 
-def get_remote_work_date(selected_day: str) -> str:
+def get_remote_work_date(selected_day: str, timezone_name: str = "Europe/Kyiv") -> str:
     """Обчислює дату обраного дня віддаленої роботи в поточному тижні."""
-    today = datetime.now().date()
+    try:
+        user_tz = pytz.timezone(timezone_name)
+    except pytz.UnknownTimeZoneError:
+        user_tz = pytz.timezone("Europe/Kyiv")
+
+    today = datetime.now(pytz.utc).astimezone(user_tz).date()
     weekday_map = {"tuesday": 1, "wednesday": 2, "thursday": 3}
     target_weekday = weekday_map[selected_day]
     current_weekday = today.weekday()
@@ -93,12 +99,14 @@ async def process_remote_work_day(callback: CallbackQuery):
     if selected_day == "none":
         await db.save_remote_work_day(callback.from_user.id, "none")
         await callback.message.edit_text(
-            "✅ Дякую! Я запам'ятав, що цього тижня ти не береш віддалену роботу."
+            "✅ Дякую! Я запам'ятав, що цього тижня ти не береш віддалену роботу.",
+            parse_mode=None,
         )
         await callback.answer("Вибір збережено!")
         return
 
-    remote_work_date = get_remote_work_date(selected_day)
+    timezone_name = await db.get_user_timezone(callback.from_user.id)
+    remote_work_date = get_remote_work_date(selected_day, timezone_name)
     await db.save_remote_work_day(callback.from_user.id, remote_work_date)
 
     day_labels = {
@@ -125,6 +133,7 @@ async def cmd_test_remote_question(message: Message):
         chat_id=message.chat.id,
         text="📅 Тестове повідомлення: коли ти працюватимеш віддалено на цьому тижні?\n\nОбери один день:",
         reply_markup=get_remote_work_keyboard(),
+        parse_mode=None,
     )
     await message.answer("Тестове повідомлення відправлено.")
 

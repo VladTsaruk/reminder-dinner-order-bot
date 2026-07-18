@@ -88,6 +88,7 @@ async def send_remote_work_question():
                 chat_id=user_id,
                 text="📅 Коли ти працюватимеш віддалено на цьому тижні?\n\nОбери один день:",
                 reply_markup=get_remote_work_keyboard(),
+                parse_mode=None,
             )
         except Exception as e:
             print(f"Помилка відправки питання про віддалену роботу для користувача {user_id}: {e}")
@@ -100,8 +101,8 @@ def start_scheduler():
     # 1. Перевірка нагадувань — щохвилини
     scheduler.add_job(check_and_send_reminders, 'cron', second=0)
 
-    # 2. Щопонеділка о 13:00 — питання про віддалену роботу
-    scheduler.add_job(send_remote_work_question, 'cron', day_of_week='mon', hour=13, minute=0)
+    # 2. Щопонеділка о 13:00 за часовим поясом користувача — питання про віддалену роботу
+    scheduler.add_job(send_remote_work_question, 'cron', second=0)
 
     # 3. Автоматичне очищення бази даних — щосуботи (day_of_week='sat') о 03:00 ночі
     scheduler.add_job(db.clear_old_orders, 'cron', day_of_week='sat', hour=3, minute=0)

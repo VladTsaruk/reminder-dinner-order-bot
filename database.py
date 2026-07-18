@@ -20,6 +20,13 @@ async def get_all_users():
         users.append((document["_id"], document["timezone"]))
     return users
 
+async def get_user_timezone(user_id: int) -> str:
+    """Повертає часовий пояс користувача або стандартний Europe/Kyiv."""
+    user = await users_collection.find_one({"_id": user_id}, {"timezone": 1})
+    if user and user.get("timezone"):
+        return user["timezone"]
+    return "Europe/Kyiv"
+
 async def save_remote_work_day(user_id: int, remote_work_date: str):
     """Зберігає дату віддаленої роботи для користувача."""
     await users_collection.update_one(
