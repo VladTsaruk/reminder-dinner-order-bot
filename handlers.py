@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from aiogram import Router, F  # type: ignore
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton  # type: ignore
-from aiogram.filters import Command, CommandStart  # type: ignore
+from aiogram.filters import Command  # type: ignore
 import pytz # type: ignore
 import database as db
 from config import ADMIN_USER_ID, MENU_URL, bot
@@ -67,8 +67,8 @@ async def cmd_start(message: Message):
     await message.answer(
         f"Привіт, {username}! 👋\n\n"
         f"Я твій обідній бот-нагадувачка.\n"
-        f"З неділі по четвер о 17:00 я буду нагадувати тобі замовити їжу.\n"
-        f"Щопонеділка о 13:00 я також спитую, коли ти працюватимеш віддалено.",
+        f"О 15:00 я буду нагадувати тобі замовити обід за два дні до потрібної дати.\n"
+        f"Щосуботи о 13:00 я також спитую, коли ти працюватимеш віддалено наступного тижня.",
         parse_mode=None,
     )
 
@@ -97,9 +97,9 @@ async def process_remote_work_day(callback: CallbackQuery):
         return
 
     if selected_day == "none":
-        await db.save_remote_work_day(callback.from_user.id, "none")
+        await db.save_remote_work_day(callback.from_user.id, "none", selected_day)
         await callback.message.edit_text(
-            "✅ Дякую! Я запам'ятав, що цього тижня ти не береш віддалену роботу.",
+            "✅ Дякую! Я запам'ятав, що наступного тижня ти не береш віддалену роботу.",
             parse_mode=None,
         )
         await callback.answer("Вибір збережено!")
@@ -107,7 +107,7 @@ async def process_remote_work_day(callback: CallbackQuery):
 
     timezone_name = await db.get_user_timezone(callback.from_user.id)
     remote_work_date = get_remote_work_date(selected_day, timezone_name)
-    await db.save_remote_work_day(callback.from_user.id, remote_work_date)
+    await db.save_remote_work_day(callback.from_user.id, remote_work_date, selected_day)
 
     day_labels = {
         "tuesday": "вівторок",
@@ -131,11 +131,50 @@ async def cmd_test_remote_question(message: Message):
 
     await bot.send_message(
         chat_id=message.chat.id,
-        text="📅 Тестове повідомлення: коли ти працюватимеш віддалено на цьому тижні?\n\nОбери один день:",
+        text="📅 Тестове повідомлення: коли ти працюватимеш віддалено наступного тижня?\n\nОбери один день:",
         reply_markup=get_remote_work_keyboard(),
         parse_mode=None,
     )
     await message.answer("Тестове повідомлення відправлено.")
+
+
+@router.message(Command("report"))
+async def cmd_report(message: Message):
+    """Показує адміністратору статистику від початку поточного місяця."""
+    if message.from_user.id != ADMIN_USER_ID:
+        await message.answer("Ця команда доступна лише адміністратору.")
+        return
+
+    report = await db.get_current_month_report()
+    month_names = [
+        "січень", "лютий", "березень", "квітень", "травень", "червень",
+        "липень", "серпень", "вересень", "жовтень", "листопад", "грудень",
+    ]
+    remote_labels = {
+        "tuesday": "Вівторок",
+        "wednesday": "Середа",
+        "thursday": "Четвер",
+        "none": "Не беру remote work",
+    }
+    orders_by_user = "\n".join(
+        f"• {item['username']} — {item['count']}"
+        for item in report["orders_by_user"]
+    ) or "—"
+    remote_choices = "\n".join(
+        f"• {remote_labels.get(day, day)} — {count}"
+        for day, count in sorted(report["remote_choices"].items())
+    ) or "—"
+
+    await message.answer(
+        f"📊 Звіт за {month_names[report['month'] - 1]} {report['year']}\n\n"
+        f"Усього користувачів: {report['total_users']}\n"
+        f"Нових з 1 числа: {report['new_users']}\n"
+        f"Активних користувачів: {report['active_users']}\n"
+        f"Підтверджених замовлень: {report['confirmed_orders']}\n\n"
+        f"Замовлення за користувачами:\n{orders_by_user}\n\n"
+        f"Вибір remote work:\n{remote_choices}",
+        parse_mode=None,
+    )
 
 
 @router.message(Command("help"))
@@ -144,9 +183,9 @@ async def cmd_help(message: Message):
     await message.answer(
         "🆘 Допомога\n\n"
         "Цей бот допомагає тобі не забувати замовляти обід.\n"
-        "Просто чекай на нагадування о 17:00 з неділі по четвер і натискай кнопку, щоб підтвердити замовлення.\n\n"
-        "Щопонеділка о 13:00 я також питатиму, коли ти працюватимеш віддалено.\n"
-        "Для адміністратора доступна команда /test_remote_question для перевірки повідомлення.\n"
+        "Просто чекай на нагадування о 15:00 за два дні до обіду й натискай кнопку, щоб підтвердити замовлення.\n\n"
+        "Щосуботи о 13:00 я також питатиму, коли ти працюватимеш віддалено наступного тижня.\n"
+        "Для адміністратора доступні команди /test_remote_question і /report.\n"
         "Якщо у тебе є питання або пропозиції, звертайся до @Владислав Царук в Slack.",
         parse_mode=None,
     )

@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz # type: ignore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton # type: ignore
@@ -17,7 +17,7 @@ def get_lunch_keyboard():
 
 
 async def check_and_send_reminders():
-    """Головна функція перевірки (неділя-четвер)."""
+    """Надсилає нагадування о 15:00 за два дні до обіду."""
     users = await db.get_all_users()
 
     for user_id, tz_name in users:
@@ -25,41 +25,26 @@ async def check_and_send_reminders():
             user_tz = pytz.timezone(tz_name)
             user_now = datetime.now(pytz.utc).astimezone(user_tz)
 
-            valid_days = [6, 0, 1, 2, 3]  # Неділя - Четвер
+            lunch_date = user_now.date() + timedelta(days=2)
 
-            if user_now.weekday() not in valid_days:
+            # Замовлення потрібні лише для обідів у робочі дні (понеділок-п'ятниця).
+            if lunch_date.weekday() > 4:
                 continue
 
-            if await db.should_skip_lunch_reminder(user_id, user_now.date()):
+            if await db.should_skip_lunch_reminder(user_id, lunch_date):
                 continue
 
             current_time_str = user_now.strftime("%H:%M")
 
-            # --- ХВИЛЯ 1: 17:00 ---
-            if current_time_str == "17:00":
+            if current_time_str == "15:00":
                 if not await db.check_order_status(user_id):
                     await bot.send_message(
                         chat_id=user_id,
-                        text="⏰ *Нагадування про обід!*\n\nДо кінця прийому замовлень залишилася 1 година. Не забудь замовити свій обід! 🍽️",
-                        reply_markup=get_lunch_keyboard(),
-                        parse_mode="Markdown",
-                    )
-
-            # --- ХВИЛЯ 2: 17:30 ---
-            elif current_time_str == "17:30":
-                if not await db.check_order_status(user_id):
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="⚠️ *Залишилося 30 хвилин!*\n\nТи досі не підтвердив замовлення обіду. Будь ласка, замов їжу та натисни кнопку нижче! 👇",
-                        reply_markup=get_lunch_keyboard(),
-                        parse_mode="Markdown",
-                    )
-            # --- ХВИЛЯ 3: 17:50, 17:52, 17:54, 17:56, 17:58 ---
-            elif current_time_str in ["17:50", "17:52", "17:54", "17:56", "17:58"]:
-                if not await db.check_order_status(user_id):
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="⏳ *Останній шанс!*\n\nДо кінця прийому замовлень залишилося менше 10 хвилин. Не забудь замовити свій обід! 🍽️",
+                        text=(
+                            "⏰ *Нагадування про обід!*\n\n"
+                            f"Не забудь замовити обід на {lunch_date.strftime('%d.%m.%Y')}. "
+                            "Прийом замовлень завершується о 07:00 наступного ранку. 🍽️"
+                        ),
                         reply_markup=get_lunch_keyboard(),
                         parse_mode="Markdown",
                     )
@@ -69,7 +54,7 @@ async def check_and_send_reminders():
 
 
 async def send_remote_work_question():
-    """Щопонеділка о 13:00 питає користувача, коли він працюватиме віддалено."""
+    """Щосуботи о 13:00 питає користувача про віддалену роботу наступного тижня."""
     users = await db.get_all_users()
 
     for user_id, tz_name in users:
@@ -77,7 +62,7 @@ async def send_remote_work_question():
             user_tz = pytz.timezone(tz_name)
             user_now = datetime.now(pytz.utc).astimezone(user_tz)
 
-            if user_now.weekday() != 0:
+            if user_now.weekday() != 5:
                 continue
 
             current_time_str = user_now.strftime("%H:%M")
@@ -86,7 +71,7 @@ async def send_remote_work_question():
 
             await bot.send_message(
                 chat_id=user_id,
-                text="📅 Коли ти працюватимеш віддалено на цьому тижні?\n\nОбери один день:",
+                text="📅 Коли ти працюватимеш віддалено наступного тижня?\n\nОбери один день:",
                 reply_markup=get_remote_work_keyboard(),
                 parse_mode=None,
             )
@@ -98,14 +83,14 @@ def start_scheduler():
     """Ініціалізація планувальника."""
     scheduler = AsyncIOScheduler()
 
-    # 1. Перевірка нагадувань — щохвилини
+    # 1. Перевірка нагадувань — щохвилини, відправка о 15:00 за локальним часом
     scheduler.add_job(check_and_send_reminders, 'cron', second=0)
 
-    # 2. Щопонеділка о 13:00 за часовим поясом користувача — питання про віддалену роботу
+    # 2. Щосуботи о 13:00 за часовим поясом користувача — питання про віддалену роботу
     scheduler.add_job(send_remote_work_question, 'cron', second=0)
 
-    # 3. Автоматичне очищення бази даних — щосуботи (day_of_week='sat') о 03:00 ночі
-    scheduler.add_job(db.clear_old_orders, 'cron', day_of_week='sat', hour=3, minute=0)
+    # 3. Очищення аналітичних даних, старших за два місяці — щосуботи о 03:00
+    scheduler.add_job(db.clear_old_analytics_data, 'cron', day_of_week='sat', hour=3, minute=0)
 
     scheduler.start()
-    print("📅 Планувальник нагадувань, питання про віддалену роботу та очищення БД запущені!")
+    print("📅 Планувальник нагадувань, remote work і очищення даних старших за два місяці запущені!")

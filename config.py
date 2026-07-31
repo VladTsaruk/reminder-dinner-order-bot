@@ -16,7 +16,7 @@ if os.path.exists(".env"):
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URI = os.getenv("MONGO_URI")
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID") or "0")
-MENU_URL = "https://imperialfood.com.ua/iEmployee/#!menu"
+MENU_URL = "https://orders.gudfood.com.ua/"
 
 if not BOT_TOKEN:
     raise ValueError("Помилка: BOT_TOKEN не знайдено!")
