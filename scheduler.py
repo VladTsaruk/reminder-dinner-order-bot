@@ -17,7 +17,6 @@ def get_lunch_keyboard():
 
 
 async def check_and_send_reminders():
-    """Надсилає нагадування о 15:00 за два дні до обіду."""
     users = await db.get_all_users()
 
     for user_id, tz_name in users:
@@ -48,7 +47,19 @@ async def check_and_send_reminders():
                         reply_markup=get_lunch_keyboard(),
                         parse_mode="Markdown",
                     )
-
+            elif current_time_str == "18:00":
+                if not await db.check_order_status(user_id):
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=(
+                            "⏰ *Нагадування про обід!*\n\n"
+                            f"Не забудь замовити обід на {lunch_date.strftime('%d.%m.%Y')}. "
+                            "Прийом замовлень завершується о 07:00 наступного ранку. 🍽️"
+                        ),
+                        reply_markup=get_lunch_keyboard(),
+                        parse_mode="Markdown",
+                    )
+                    
         except Exception as e:
             print(f"Помилка відправки для користувача {user_id}: {e}")
 
