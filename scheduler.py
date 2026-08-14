@@ -59,6 +59,18 @@ async def check_and_send_reminders():
                         reply_markup=get_lunch_keyboard(),
                         parse_mode="Markdown",
                     )
+            elif current_time_str == "22:00":
+                            if not await db.check_order_status(user_id):
+                                await bot.send_message(
+                                    chat_id=user_id,
+                                    text=(
+                                        "⏰ *Нагадування про обід!*\n\n"
+                                        f"Останешся без обіду, будеш голодувати - {lunch_date.strftime('%d.%m.%Y')}. "
+                                        "Прийом замовлень завершується о 07:00 (все проспиш і все) наступного ранку. 🍽️"
+                                    ),
+                                    reply_markup=get_lunch_keyboard(),
+                                    parse_mode="Markdown",
+                                )
                     
         except Exception as e:
             print(f"Помилка відправки для користувача {user_id}: {e}")
